@@ -268,7 +268,36 @@
     </footer>
 
   </main>
+  <!-- ====== Mobile Touch Controls Overlay ====== -->
+<div id="mobileControls" class="md:hidden absolute inset-0 pointer-events-none z-10 flex justify-between p-4 items-end select-none">
+  <!-- D-Pad / Joystick Area (Left) -->
+  <div id="touchJoystick" class="w-32 h-32 bg-slate-900/60 border-2 border-slate-600/80 rounded-full relative pointer-events-auto flex items-center justify-center backdrop-blur-sm">
+    <div id="joystickKnob" class="w-12 h-12 bg-amber-400/80 rounded-full shadow-lg absolute"></div>
+  </div>
 
+  <!-- Action Buttons Area (Right) -->
+  <div class="flex flex-col gap-3 items-end pointer-events-auto">
+    <!-- Quick Weapon Switch Buttons -->
+    <div class="flex gap-1.5 mb-1">
+      <button id="btnWp1" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">1</button>
+      <button id="btnWp2" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">2</button>
+      <button id="btnWp3" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">3</button>
+      <button id="btnWp4" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">4</button>
+    </div>
+
+    <div class="flex gap-2">
+      <!-- Enter/Exit Vehicle & Shop Button -->
+      <button id="btnActionE" class="w-12 h-12 bg-indigo-600/80 border border-indigo-400 rounded-full text-white font-black text-sm active:bg-indigo-500 shadow-lg flex items-center justify-center">
+        E
+      </button>
+
+      <!-- Shoot Button -->
+      <button id="btnShoot" class="w-16 h-16 bg-red-600/80 border-2 border-red-400 rounded-full text-white font-black text-base active:bg-red-500 shadow-xl flex items-center justify-center">
+        🔥
+      </button>
+    </div>
+  </div>
+</div>    
   <!-- Game Logic -->
   <script src="game.js"></script>
 </body>
