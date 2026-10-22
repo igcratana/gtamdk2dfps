@@ -157,6 +157,7 @@ const canvas        = document.getElementById('gameCanvas');
 const ctx           = canvas.getContext('2d');
 const minimapCanvas = document.getElementById('minimap');
 const mctx          = minimapCanvas.getContext('2d');
+const gameContainer = document.querySelector('.game-container');
 
 const startOverlay    = document.getElementById('startOverlay');
 const startButton     = document.getElementById('startButton');
@@ -171,6 +172,8 @@ const closeCheatBtn = document.getElementById('closeCheatBtn');
 const cheatInput    = document.getElementById('cheatInput');
 const submitCheatBtn= document.getElementById('submitCheatBtn');
 const cheatNotice   = document.getElementById('cheatNotice');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
 
 const cashHUD        = document.getElementById('cashHUD');
 const shopModalCash  = document.getElementById('shopModalCash');
@@ -1751,6 +1754,32 @@ openCheatBtn.addEventListener('click', openCheatModal);
 closeCheatBtn.addEventListener('click', closeCheatModal);
 submitCheatBtn.addEventListener('click', executeCheatCommand);
 cheatInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeCheatCommand(); });
+
+// Fullscreen Toggle
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    gameContainer.requestFullscreen().catch(err => {
+      console.log('Fullscreen error:', err);
+    });
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+// Exit Fullscreen Button
+exitFullscreenBtn.addEventListener('click', () => {
+  document.exitFullscreen();
+});
+
+// Handle fullscreen change to update UI
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    exitFullscreenBtn.classList.remove('hidden');
+  } else {
+    exitFullscreenBtn.classList.add('hidden');
+  }
+  resizeCanvas();
+});
 
 // Mouse Input
 const MOUSE_SENSITIVITY = 0.0035;
