@@ -1,6 +1,6 @@
 /* ========================================
    ទីក្រុងសេរី — Open World 2.5D
-   game.js — Logic ហ្គេមទាំងអស់
+   game.js — Logic ហ្គេមទាំងអស់ + Mobile Touch Controls
    ======================================== */
 
 // ======================================
@@ -192,6 +192,16 @@ const buyShotgunBtn= document.getElementById('buyShotgunBtn');
 const buyAKBtn     = document.getElementById('buyAKBtn');
 const buyAWPBtn    = document.getElementById('buyAWPBtn');
 
+// Mobile Control Elements
+const touchJoystick  = document.getElementById('touchJoystick');
+const joystickKnob   = document.getElementById('joystickKnob');
+const btnActionE     = document.getElementById('btnActionE');
+const btnShoot       = document.getElementById('btnShoot');
+const btnWp1         = document.getElementById('btnWp1');
+const btnWp2         = document.getElementById('btnWp2');
+const btnWp3         = document.getElementById('btnWp3');
+const btnWp4         = document.getElementById('btnWp4');
+
 // ======================================
 // 2. Audio Engine & Background Music
 // ======================================
@@ -361,6 +371,14 @@ let screenHeight      = 0;
 let focalLength       = 0;
 let zBuffer           = [];
 let steeringWheelAngle= 0;
+
+// Joystick State Variables
+let joystickActive = false;
+let joystickMoveX  = 0; // -1 to 1
+let joystickMoveY  = 0; // -1 to 1
+
+// Touch Look Area State Variables
+let lastTouchX = null;
 
 // ======================================
 // 6. Weapons
@@ -722,7 +740,6 @@ function openShop() {
 function closeShop() {
   isShopOpen = false;
   shopModal.classList.add('hidden');
-  canvas.requestPointerLock();
 }
 
 function openCheatModal() {
@@ -738,7 +755,6 @@ function openCheatModal() {
 function closeCheatModal() {
   isShopOpen = false;
   cheatModal.classList.add('hidden');
-  canvas.requestPointerLock();
 }
 
 function executeCheatCommand() {
@@ -827,8 +843,15 @@ function updateGame(dt) {
 
   if (player.drivingVehicle) {
     const car    = player.drivingVehicle;
-    const accel  = (keys.KeyW || keys.ArrowUp   ? 1 : 0) - (keys.KeyS || keys.ArrowDown  ? 1 : 0);
-    const steer  = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft  ? 1 : 0);
+    let accel  = (keys.KeyW || keys.ArrowUp   ? 1 : 0) - (keys.KeyS || keys.ArrowDown  ? 1 : 0);
+    let steer  = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft  ? 1 : 0);
+
+    // Integrate Joystick to Vehicle Controls
+    if (joystickActive) {
+      accel = -joystickMoveY; // Push forward -> negative Y -> acceleration forward
+      steer = joystickMoveX;
+    }
+
     const maxSpeed = keys.ShiftLeft || keys.ShiftRight ? 16.0 : 12.0;
 
     if (accel > 0)      car.speed = Math.min( maxSpeed,        car.speed + accel * dt * 15.0);
@@ -907,8 +930,14 @@ function updateGame(dt) {
     if (keys.ArrowLeft)  player.angle -= turnSpeed;
     if (keys.ArrowRight) player.angle += turnSpeed;
 
-    const forward = (keys.KeyW || keys.ArrowUp   ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
-    const strafe  = (keys.KeyD ? 1 : 0)                   - (keys.KeyA ? 1 : 0);
+    let forward = (keys.KeyW || keys.ArrowUp   ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+    let strafe  = (keys.KeyD ? 1 : 0)                   - (keys.KeyA ? 1 : 0);
+
+    // Integrate Joystick to On-Foot Movement
+    if (joystickActive) {
+      forward = -joystickMoveY;
+      strafe  = joystickMoveX;
+    }
 
     if (forward || strafe) {
       const norm = Math.hypot(forward, strafe) || 1;
@@ -1697,14 +1726,16 @@ function gameLoop(timestamp) {
 }
 
 // ======================================
-// 27. Event Listeners
+// 27. Event Listeners & Touch Controls
 // ======================================
 startButton.addEventListener('click', () => {
   startOverlay.classList.add('hidden');
   isRunning     = true;
   lastFrameTime = performance.now();
   initAudio();
-  canvas.requestPointerLock();
+  if (!('ontouchstart' in window)) {
+    canvas.requestPointerLock();
+  }
   requestAnimationFrame(gameLoop);
 });
 
@@ -1721,6 +1752,7 @@ closeCheatBtn.addEventListener('click', closeCheatModal);
 submitCheatBtn.addEventListener('click', executeCheatCommand);
 cheatInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeCheatCommand(); });
 
+// Mouse Input
 const MOUSE_SENSITIVITY = 0.0035;
 
 document.addEventListener('mousemove', e => {
@@ -1735,11 +1767,12 @@ document.addEventListener('mousemove', e => {
 });
 
 canvas.addEventListener('click', () => {
-  if (isRunning && !isShopOpen && document.pointerLockElement !== canvas) {
+  if (isRunning && !isShopOpen && document.pointerLockElement !== canvas && !('ontouchstart' in window)) {
     canvas.requestPointerLock();
   }
 });
 
+// Keyboard Input
 window.addEventListener('keydown', e => {
   if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
   keys[e.code] = true;
@@ -1780,6 +1813,110 @@ window.addEventListener('mousedown', e => {
 });
 
 window.addEventListener('mouseup', e => { if (e.button === 0) isFiring = false; });
+
+// ======================================
+// Touch Control Handlers (Mobile Support)
+// ======================================
+if (touchJoystick) {
+  const maxRadius = 40;
+
+  touchJoystick.addEventListener('touchstart', e => {
+    e.preventDefault();
+    joystickActive = true;
+    updateJoystick(e.touches[0]);
+  });
+
+  touchJoystick.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (joystickActive) updateJoystick(e.touches[0]);
+  });
+
+  const resetJoystick = e => {
+    e.preventDefault();
+    joystickActive = false;
+    joystickMoveX  = 0;
+    joystickMoveY  = 0;
+    joystickKnob.style.transform = 'translate(0px, 0px)';
+  };
+
+  touchJoystick.addEventListener('touchend', resetJoystick);
+  touchJoystick.addEventListener('touchcancel', resetJoystick);
+
+  function updateJoystick(touch) {
+    const rect = touchJoystick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let dx = touch.clientX - centerX;
+    let dy = touch.clientY - centerY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > maxRadius) {
+      dx = (dx / dist) * maxRadius;
+      dy = (dy / dist) * maxRadius;
+    }
+
+    joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    joystickMoveX = dx / maxRadius;
+    joystickMoveY = dy / maxRadius;
+  }
+}
+
+// Touch Screen Look Area (Slide right side of screen to rotate view)
+canvas.addEventListener('touchstart', e => {
+  if (!isRunning || isShopOpen) return;
+  for (let i = 0; i < e.touches.length; i++) {
+    if (e.touches[i].clientX > window.innerWidth / 2) {
+      lastTouchX = e.touches[i].clientX;
+    }
+  }
+});
+
+canvas.addEventListener('touchmove', e => {
+  if (!isRunning || isShopOpen) return;
+  for (let i = 0; i < e.touches.length; i++) {
+    if (e.touches[i].clientX > window.innerWidth / 2) {
+      if (lastTouchX !== null) {
+        const deltaX = e.touches[i].clientX - lastTouchX;
+        player.angle += deltaX * 0.008;
+        if (player.drivingVehicle) {
+          player.drivingVehicle.angle = player.angle;
+          steeringWheelAngle += deltaX * 0.02;
+        }
+      }
+      lastTouchX = e.touches[i].clientX;
+    }
+  }
+});
+
+canvas.addEventListener('touchend', () => { lastTouchX = null; });
+
+// Mobile Buttons Event Listeners
+if (btnActionE) {
+  btnActionE.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const distToShop = Math.hypot(player.x - SHOP_POS.x, player.y - SHOP_POS.y);
+    if (distToShop < 2.0 && !player.drivingVehicle) openShop();
+    else toggleVehicle();
+  });
+}
+
+if (btnShoot) {
+  btnShoot.addEventListener('touchstart', e => {
+    e.preventDefault();
+    isFiring = true;
+    shootWeapon();
+  });
+  btnShoot.addEventListener('touchend', e => {
+    e.preventDefault();
+    isFiring = false;
+  });
+}
+
+if (btnWp1) btnWp1.addEventListener('touchstart', e => { e.preventDefault(); selectWeapon('pistol'); });
+if (btnWp2) btnWp2.addEventListener('touchstart', e => { e.preventDefault(); selectWeapon('shotgun'); });
+if (btnWp3) btnWp3.addEventListener('touchstart', e => { e.preventDefault(); selectWeapon('ak'); });
+if (btnWp4) btnWp4.addEventListener('touchstart', e => { e.preventDefault(); selectWeapon('awp'); });
 
 // ======================================
 // 28. Init
