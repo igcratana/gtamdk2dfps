@@ -193,9 +193,12 @@ const buyAKBtn     = document.getElementById('buyAKBtn');
 const buyAWPBtn    = document.getElementById('buyAWPBtn');
 
 // ======================================
-// 2. Audio Engine
+// 2. Audio Engine & Background Music
 // ======================================
 let audioCtx = null;
+const bgmAudio = new Audio('dg.weba');
+bgmAudio.loop = true;
+bgmAudio.volume = 0.4;
 
 function initAudio() {
   if (!audioCtx) {
@@ -204,6 +207,11 @@ function initAudio() {
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
+  
+  // លេង Background Music (dg.weba)
+  bgmAudio.play().catch(err => {
+    console.log("Audio autoplay prevented or error:", err);
+  });
 }
 
 function playGunshotSound() {
