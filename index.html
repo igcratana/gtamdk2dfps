@@ -10,10 +10,74 @@
 
   <!-- Custom Game Styles -->
   <link rel="stylesheet" href="style.css" />
-</head>
-<body class="p-2 sm:p-4 md:p-6 flex flex-col items-center justify-center min-h-screen">
 
-  <main class="w-full max-w-6xl flex flex-col gap-3">
+  <style>
+    /* Game container styling for better display */
+    .game-container {
+      aspect-ratio: 16 / 9;
+      min-height: 60vh;
+      max-height: 75vh;
+    }
+
+    /* Canvas should fill the container */
+    .game-container canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Fullscreen styling for game container */
+    .game-container:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+      aspect-ratio: auto;
+      min-height: auto;
+      max-height: auto;
+    }
+
+    .game-container:fullscreen canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Webkit fullscreen support */
+    .game-container:-webkit-full-screen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+      aspect-ratio: auto;
+      min-height: auto;
+      max-height: auto;
+    }
+
+    .game-container:-webkit-full-screen canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Mozilla fullscreen support */
+    .game-container:-moz-full-screen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+      aspect-ratio: auto;
+      min-height: auto;
+      max-height: auto;
+    }
+
+    .game-container:-moz-full-screen canvas {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="p-1 sm:p-2 md:p-3 flex flex-col items-center justify-center min-h-screen">
+
+  <main class="w-full max-w-7xl flex flex-col gap-3">
 
     <!-- ====== Top Bar ====== -->
     <header class="flex items-center justify-between px-2">
@@ -28,6 +92,12 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <!-- Fullscreen Toggle -->
+        <button id="fullscreenBtn" class="flex items-center gap-2 bg-emerald-900/80 hover:bg-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-700 text-xs text-emerald-200 transition-colors shadow">
+          <span>⛶</span>
+          <span>Fullscreen</span>
+        </button>
+
         <!-- Cheat Code Toggle -->
         <button id="openCheatBtn" class="flex items-center gap-2 bg-indigo-900/80 hover:bg-indigo-800 px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 transition-colors shadow">
           <span>⌨️</span>
@@ -43,6 +113,11 @@
 
     <!-- ====== Main Viewport ====== -->
     <section class="relative w-full game-container rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-slate-900">
+      <!-- Exit Fullscreen Button (visible only in fullscreen) -->
+      <button id="exitFullscreenBtn" class="exit-fullscreen-btn hidden absolute top-4 right-4 z-50 bg-red-600/90 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-lg">
+        ✕ Exit Fullscreen
+      </button>
+
       <canvas id="gameCanvas"></canvas>
 
       <!-- Crosshair -->
