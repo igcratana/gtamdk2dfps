@@ -59,3 +59,17 @@ kbd {
 .glow-yellow {
   animation: shopGlow 2s infinite ease-in-out;
 }
+
+/* ====== Mobile Touch Controls Style ====== */
+#mobileControls {
+  touch-action: none;
+}
+
+#touchJoystick {
+  touch-action: none;
+}
+
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
