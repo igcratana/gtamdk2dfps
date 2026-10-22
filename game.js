@@ -196,7 +196,7 @@ const buyAWPBtn    = document.getElementById('buyAWPBtn');
 // 2. Audio Engine & Background Music
 // ======================================
 let audioCtx = null;
-const bgmAudio = new Audio('dg.weba');
+const bgmAudio = new Audio('dg.mp3');
 bgmAudio.loop = true;
 bgmAudio.volume = 0.4;
 
@@ -208,7 +208,7 @@ function initAudio() {
     audioCtx.resume();
   }
   
-  // លេង Background Music (dg.weba)
+  // លេង Background Music (dg.mp3)
   bgmAudio.play().catch(err => {
     console.log("Audio autoplay prevented or error:", err);
   });
