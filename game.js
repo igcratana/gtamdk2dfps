@@ -174,6 +174,8 @@ const submitCheatBtn= document.getElementById('submitCheatBtn');
 const cheatNotice   = document.getElementById('cheatNotice');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+const inGameFullscreenBtn = document.getElementById('inGameFullscreenBtn');
+const startFullscreenBtn = document.getElementById('startFullscreenBtn');
 
 const cashHUD        = document.getElementById('cashHUD');
 const shopModalCash  = document.getElementById('shopModalCash');
@@ -495,6 +497,7 @@ function resizeCanvas() {
   zBuffer     = new Float32Array(screenWidth);
 }
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150));
 
 // ======================================
 // 11. Collision Helpers
@@ -1755,30 +1758,252 @@ closeCheatBtn.addEventListener('click', closeCheatModal);
 submitCheatBtn.addEventListener('click', executeCheatCommand);
 cheatInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeCheatCommand(); });
 
-// Fullscreen Toggle
-fullscreenBtn.addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    gameContainer.requestFullscreen().catch(err => {
-      console.log('Fullscreen error:', err);
-    });
-  } else {
-    document.exitFullscreen();
-  }
-});
+// ======================================
+// Comprehensive Cross-Browser & Mobile Fullscreen System
+// ======================================
+let isPseudoFullscreen = false;
+let lastFullscreenToggleTime = 0;
 
-// Exit Fullscreen Button
-exitFullscreenBtn.addEventListener('click', () => {
-  document.exitFullscreen();
-});
+function getNativeFullscreenElement() {
+  return document.fullscreenElement ||
+         document.webkitFullscreenElement ||
+         document.webkitCurrentFullScreenElement ||
+         document.mozFullScreenElement ||
+         document.msFullscreenElement ||
+         null;
+}
 
-// Handle fullscreen change to update UI
-document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement) {
-    exitFullscreenBtn.classList.remove('hidden');
-  } else {
-    exitFullscreenBtn.classList.add('hidden');
+function isFullscreen() {
+  return !!getNativeFullscreenElement() || isPseudoFullscreen;
+}
+
+function tryLockLandscape() {
+  try {
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+  } catch (e) {}
+}
+
+function tryUnlockOrientation() {
+  try {
+    if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+      screen.orientation.unlock();
+    }
+  } catch (e) {}
+}
+
+function enablePseudoFullscreen() {
+  isPseudoFullscreen = true;
+  if (gameContainer) {
+    gameContainer.classList.add('pseudo-fullscreen');
   }
+  document.documentElement.classList.add('in-game-fullscreen');
+  document.body.classList.add('in-game-fullscreen');
+  tryLockLandscape();
+  updateFullscreenUI();
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    setTimeout(resizeCanvas, 100);
+  });
+}
+
+function disablePseudoFullscreen() {
+  isPseudoFullscreen = false;
+  if (gameContainer) {
+    gameContainer.classList.remove('pseudo-fullscreen');
+  }
+  document.documentElement.classList.remove('in-game-fullscreen');
+  document.body.classList.remove('in-game-fullscreen');
+  tryUnlockOrientation();
+  updateFullscreenUI();
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    setTimeout(resizeCanvas, 100);
+  });
+}
+
+async function requestFullscreenUniversal() {
+  if (!gameContainer) return;
+
+  const requestMethod = gameContainer.requestFullscreen ||
+                        gameContainer.webkitRequestFullscreen ||
+                        gameContainer.webkitRequestFullScreen ||
+                        gameContainer.mozRequestFullScreen ||
+                        gameContainer.msRequestFullscreen;
+
+  let nativeSucceeded = false;
+
+  if (requestMethod) {
+    try {
+      const res = requestMethod.call(gameContainer);
+      if (res && typeof res.then === 'function') {
+        await res;
+      }
+      nativeSucceeded = true;
+      tryLockLandscape();
+    } catch (err) {
+      console.warn('Native requestFullscreen failed or restricted, falling back to CSS fullscreen:', err);
+      nativeSucceeded = false;
+    }
+  }
+
+  // If native fullscreen is unsupported or failed (e.g. iOS Safari, restricted iframe), use pseudo-fullscreen
+  if (!nativeSucceeded && !getNativeFullscreenElement()) {
+    enablePseudoFullscreen();
+  } else {
+    updateFullscreenUI();
+    resizeCanvas();
+    setTimeout(resizeCanvas, 150);
+  }
+}
+
+async function exitFullscreenUniversal() {
+  if (getNativeFullscreenElement()) {
+    try {
+      const exitMethod = document.exitFullscreen ||
+                         document.webkitExitFullscreen ||
+                         document.webkitCancelFullScreen ||
+                         document.mozCancelFullScreen ||
+                         document.msExitFullscreen;
+      if (exitMethod) {
+        const res = exitMethod.call(document);
+        if (res && typeof res.then === 'function') {
+          await res;
+        }
+      }
+    } catch (err) {
+      console.warn('Native exitFullscreen failed:', err);
+    }
+  }
+
+  if (isPseudoFullscreen) {
+    disablePseudoFullscreen();
+  }
+
+  tryUnlockOrientation();
+  updateFullscreenUI();
   resizeCanvas();
+  setTimeout(resizeCanvas, 150);
+}
+
+function toggleFullscreen() {
+  if (isFullscreen()) {
+    exitFullscreenUniversal();
+  } else {
+    requestFullscreenUniversal();
+  }
+}
+
+function safeToggleFullscreen(e) {
+  if (e) {
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+  }
+  const now = Date.now();
+  if (now - lastFullscreenToggleTime < 350) return;
+  lastFullscreenToggleTime = now;
+  toggleFullscreen();
+}
+
+function updateFullscreenUI() {
+  const active = isFullscreen();
+
+  // Exit button inside viewport
+  if (exitFullscreenBtn) {
+    if (active) {
+      exitFullscreenBtn.classList.remove('hidden');
+    } else {
+      exitFullscreenBtn.classList.add('hidden');
+    }
+  }
+
+  // Header fullscreen button
+  if (fullscreenBtn) {
+    const textSpan = document.getElementById('fullscreenBtnText');
+    const iconSpan = fullscreenBtn.querySelector('span:first-child');
+    if (active) {
+      if (textSpan) textSpan.textContent = 'ចាកចេញពីពេញអេក្រង់';
+      if (iconSpan) iconSpan.textContent = '✕';
+      fullscreenBtn.classList.add('bg-red-800', 'border-red-600', 'text-red-100');
+      fullscreenBtn.classList.remove('bg-emerald-800', 'border-emerald-600', 'text-emerald-100');
+    } else {
+      if (textSpan) textSpan.textContent = 'ពេញអេក្រង់';
+      if (iconSpan) iconSpan.textContent = '⛶';
+      fullscreenBtn.classList.remove('bg-red-800', 'border-red-600', 'text-red-100');
+      fullscreenBtn.classList.add('bg-emerald-800', 'border-emerald-600', 'text-emerald-100');
+    }
+  }
+
+  // In-Game HUD fullscreen button
+  if (inGameFullscreenBtn) {
+    if (active) {
+      inGameFullscreenBtn.textContent = '✕';
+      inGameFullscreenBtn.title = 'ចាកចេញពីពេញអេក្រង់ (Exit Fullscreen)';
+      inGameFullscreenBtn.classList.add('text-red-400', 'border-red-500/60');
+      inGameFullscreenBtn.classList.remove('text-emerald-400', 'border-slate-700');
+    } else {
+      inGameFullscreenBtn.textContent = '⛶';
+      inGameFullscreenBtn.title = 'ពេញអេក្រង់ (Fullscreen)';
+      inGameFullscreenBtn.classList.remove('text-red-400', 'border-red-500/60');
+      inGameFullscreenBtn.classList.add('text-emerald-400', 'border-slate-700');
+    }
+  }
+}
+
+// Bind Fullscreen Buttons with Click & Touch
+function bindFullscreenTrigger(btn) {
+  if (!btn) return;
+  btn.addEventListener('click', safeToggleFullscreen);
+  btn.addEventListener('touchend', safeToggleFullscreen, { passive: false });
+}
+
+bindFullscreenTrigger(fullscreenBtn);
+bindFullscreenTrigger(exitFullscreenBtn);
+bindFullscreenTrigger(inGameFullscreenBtn);
+
+// Start Fullscreen button in Start Overlay
+if (startFullscreenBtn) {
+  const handleStartFullscreen = e => {
+    if (e && e.cancelable) e.preventDefault();
+    startOverlay.classList.add('hidden');
+    isRunning = true;
+    lastFrameTime = performance.now();
+    initAudio();
+    if (!('ontouchstart' in window)) {
+      canvas.requestPointerLock();
+    }
+    requestAnimationFrame(gameLoop);
+    requestFullscreenUniversal();
+  };
+  startFullscreenBtn.addEventListener('click', handleStartFullscreen);
+  startFullscreenBtn.addEventListener('touchend', handleStartFullscreen, { passive: false });
+}
+
+// Vendor prefixed fullscreen change events
+const fullscreenEventNames = [
+  'fullscreenchange',
+  'webkitfullscreenchange',
+  'mozfullscreenchange',
+  'MSFullscreenChange'
+];
+
+fullscreenEventNames.forEach(evt => {
+  document.addEventListener(evt, () => {
+    if (!getNativeFullscreenElement() && !isPseudoFullscreen) {
+      tryUnlockOrientation();
+    }
+    updateFullscreenUI();
+    resizeCanvas();
+    setTimeout(resizeCanvas, 150);
+  });
+});
+
+// ESC key listener to exit pseudo-fullscreen on PC
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && isPseudoFullscreen) {
+    exitFullscreenUniversal();
+  }
 });
 
 // Mouse Input
@@ -1899,12 +2124,13 @@ canvas.addEventListener('touchstart', e => {
       lastTouchX = e.touches[i].clientX;
     }
   }
-});
+}, { passive: true });
 
 canvas.addEventListener('touchmove', e => {
   if (!isRunning || isShopOpen) return;
   for (let i = 0; i < e.touches.length; i++) {
     if (e.touches[i].clientX > window.innerWidth / 2) {
+      if (e.cancelable) e.preventDefault();
       if (lastTouchX !== null) {
         const deltaX = e.touches[i].clientX - lastTouchX;
         player.angle += deltaX * 0.008;
@@ -1916,7 +2142,7 @@ canvas.addEventListener('touchmove', e => {
       lastTouchX = e.touches[i].clientX;
     }
   }
-});
+}, { passive: false });
 
 canvas.addEventListener('touchend', () => { lastTouchX = null; });
 
