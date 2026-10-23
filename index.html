@@ -17,6 +17,9 @@
       aspect-ratio: 16 / 9;
       min-height: 60vh;
       max-height: 75vh;
+      position: relative;
+      overflow: hidden;
+      background-color: #020617;
     }
 
     /* Canvas should fill the container */
@@ -24,54 +27,63 @@
       width: 100%;
       height: 100%;
       display: block;
+      touch-action: none;
     }
 
-    /* Fullscreen styling for game container */
-    .game-container:fullscreen {
-      width: 100vw;
-      height: 100vh;
-      border-radius: 0;
-      border: none;
-      aspect-ratio: auto;
-      min-height: auto;
-      max-height: auto;
+    /* Native Fullscreen & Fallback Pseudo-Fullscreen */
+    .game-container:fullscreen,
+    .game-container:-webkit-full-screen,
+    .game-container:-moz-full-screen,
+    .game-container:-ms-fullscreen,
+    .game-container.pseudo-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      width: 100dvw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-width: none !important;
+      max-height: none !important;
+      min-height: none !important;
+      aspect-ratio: auto !important;
+      border-radius: 0 !important;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      z-index: 999999 !important;
+      background-color: #020617 !important;
     }
 
-    .game-container:fullscreen canvas {
-      width: 100%;
-      height: 100%;
+    .game-container:fullscreen canvas,
+    .game-container:-webkit-full-screen canvas,
+    .game-container:-moz-full-screen canvas,
+    .game-container:-ms-fullscreen canvas,
+    .game-container.pseudo-fullscreen canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block !important;
     }
 
-    /* Webkit fullscreen support */
-    .game-container:-webkit-full-screen {
-      width: 100vw;
-      height: 100vh;
-      border-radius: 0;
-      border: none;
-      aspect-ratio: auto;
-      min-height: auto;
-      max-height: auto;
+    /* Lock body scroll in pseudo fullscreen */
+    html.in-game-fullscreen,
+    body.in-game-fullscreen {
+      overflow: hidden !important;
+      position: fixed !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      touch-action: none !important;
     }
 
-    .game-container:-webkit-full-screen canvas {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Mozilla fullscreen support */
-    .game-container:-moz-full-screen {
-      width: 100vw;
-      height: 100vh;
-      border-radius: 0;
-      border: none;
-      aspect-ratio: auto;
-      min-height: auto;
-      max-height: auto;
-    }
-
-    .game-container:-moz-full-screen canvas {
-      width: 100%;
-      height: 100%;
+    .touch-manipulation {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
     }
   </style>
 </head>
@@ -80,31 +92,31 @@
   <main class="w-full max-w-7xl flex flex-col gap-3">
 
     <!-- ====== Top Bar ====== -->
-    <header class="flex items-center justify-between px-2">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-xl shadow-lg shadow-amber-400/20">
+    <header class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 px-2">
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-lg sm:text-xl shadow-lg shadow-amber-400/20">
           🌆
         </div>
         <div>
-          <h1 class="font-bold text-base leading-tight">ទីក្រុងសេរី (Open World 2.5D)</h1>
-          <p class="text-xs text-slate-400">ផ្លូវថ្នល់ធំទូលាយ · ព្រះច័ន្ទស្ថេរភាព · ពពកមានចលនាខ្យល់ · NPC ដើរពេញទីក្រុង</p>
+          <h1 class="font-bold text-sm sm:text-base leading-tight">ទីក្រុងសេរី (Open World 2.5D)</h1>
+          <p class="hidden sm:block text-xs text-slate-400">ផ្លូវថ្នល់ធំទូលាយ · ព្រះច័ន្ទស្ថេរភាព · ពពកមានចលនាខ្យល់ · NPC ដើរពេញទីក្រុង</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- Fullscreen Toggle -->
-        <button id="fullscreenBtn" class="flex items-center gap-2 bg-emerald-900/80 hover:bg-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-700 text-xs text-emerald-200 transition-colors shadow">
+        <button id="fullscreenBtn" type="button" class="flex items-center gap-1.5 bg-emerald-800 hover:bg-emerald-700 active:scale-95 px-2.5 sm:px-3 py-1.5 rounded-lg border border-emerald-600 text-xs text-emerald-100 font-semibold transition-all shadow touch-manipulation">
           <span>⛶</span>
-          <span>Fullscreen</span>
+          <span id="fullscreenBtnText">ពេញអេក្រង់</span>
         </button>
 
         <!-- Cheat Code Toggle -->
-        <button id="openCheatBtn" class="flex items-center gap-2 bg-indigo-900/80 hover:bg-indigo-800 px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 transition-colors shadow">
+        <button id="openCheatBtn" type="button" class="flex items-center gap-1.5 bg-indigo-900/80 hover:bg-indigo-800 active:scale-95 px-2 sm:px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 transition-all shadow touch-manipulation">
           <span>⌨️</span>
-          <span>បញ្ចូលកូដ (Cheat Console)</span>
+          <span class="hidden sm:inline">បញ្ចូលកូដ (Cheat)</span>
         </button>
 
-        <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+        <div class="hidden md:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>ពិភពបើកចំហរ ២,៥D</span>
         </div>
@@ -114,8 +126,9 @@
     <!-- ====== Main Viewport ====== -->
     <section class="relative w-full game-container rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-slate-900">
       <!-- Exit Fullscreen Button (visible only in fullscreen) -->
-      <button id="exitFullscreenBtn" class="exit-fullscreen-btn hidden absolute top-4 right-4 z-50 bg-red-600/90 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-lg">
-        ✕ Exit Fullscreen
+      <button id="exitFullscreenBtn" type="button" class="exit-fullscreen-btn hidden absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-red-600/95 hover:bg-red-500 active:scale-95 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-xl border border-red-400 pointer-events-auto flex items-center gap-1.5 backdrop-blur-sm touch-manipulation">
+        <span>✕</span>
+        <span>ចាកចេញពីពេញអេក្រង់ (Exit)</span>
       </button>
 
       <canvas id="gameCanvas"></canvas>
@@ -126,36 +139,41 @@
       </div>
 
       <!-- Top HUD -->
-      <div class="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
-        <div class="flex flex-col gap-2">
+      <div class="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex justify-between items-start pointer-events-none z-10">
+        <div class="flex flex-col gap-1.5 sm:gap-2">
           <!-- District -->
-          <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-2 rounded-xl text-xs">
-            <span class="text-[10px] uppercase text-amber-400 tracking-wider font-semibold block">ទីតាំង</span>
-            <span id="district" class="font-bold text-slate-100">សង្កាត់កណ្ដាល</span>
+          <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs">
+            <span class="text-[9px] sm:text-[10px] uppercase text-amber-400 tracking-wider font-semibold block">ទីតាំង</span>
+            <span id="district" class="font-bold text-slate-100 text-xs sm:text-sm">សង្កាត់កណ្ដាល</span>
           </div>
           <!-- Speedometer -->
-          <div id="speedometer" class="hidden bg-slate-900/85 backdrop-blur-md border border-amber-500/50 px-3 py-1.5 rounded-xl text-xs text-amber-400 font-mono font-bold">
+          <div id="speedometer" class="hidden bg-slate-900/85 backdrop-blur-md border border-amber-500/50 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs text-amber-400 font-mono font-bold">
             🏎️ ល្បឿន៖ <span id="speedValue">0</span> KM/H
           </div>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2">
           <!-- Ammo Card -->
-          <div id="ammoCard" class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-xl flex items-center gap-3">
-            <div class="text-xl">🔫</div>
+          <div id="ammoCard" class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-2.5 sm:px-4 py-1 sm:py-2 rounded-xl flex items-center gap-2 sm:gap-3">
+            <div class="text-base sm:text-xl">🔫</div>
             <div>
-              <span id="weaponNameHUD" class="text-[10px] uppercase text-slate-400 font-semibold block">Pistol</span>
-              <span class="font-mono font-extrabold text-sm text-slate-100">
+              <span id="weaponNameHUD" class="text-[9px] sm:text-[10px] uppercase text-slate-400 font-semibold block">Pistol</span>
+              <span class="font-mono font-extrabold text-xs sm:text-sm text-slate-100">
                 <span id="clipAmmoHUD" class="text-amber-400">15</span> / <span id="reserveAmmoHUD">60</span>
               </span>
             </div>
           </div>
 
           <!-- Cash Card -->
-          <div class="bg-slate-900/85 backdrop-blur-md border border-amber-500/40 px-4 py-2 rounded-xl flex items-center gap-2">
-            <span class="text-amber-400 font-bold text-lg">$</span>
-            <span id="cashHUD" class="font-mono font-extrabold text-amber-400 text-base">100</span>
+          <div class="bg-slate-900/85 backdrop-blur-md border border-amber-500/40 px-2.5 sm:px-4 py-1 sm:py-2 rounded-xl flex items-center gap-1 sm:gap-2">
+            <span class="text-amber-400 font-bold text-sm sm:text-lg">$</span>
+            <span id="cashHUD" class="font-mono font-extrabold text-amber-400 text-xs sm:text-base">100</span>
           </div>
+
+          <!-- Quick In-Game Fullscreen Toggle Button -->
+          <button id="inGameFullscreenBtn" type="button" class="pointer-events-auto flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-slate-900/90 hover:bg-slate-800 active:scale-95 border border-slate-700 rounded-xl text-emerald-400 text-base sm:text-lg font-bold transition-all shadow-lg touch-manipulation" title="ពេញអេក្រង់ (Fullscreen)">
+            ⛶
+          </button>
         </div>
       </div>
 
@@ -173,8 +191,8 @@
         </div>
       </div>
 
-      <!-- Mini-map -->
-      <div class="absolute bottom-4 right-4 w-36 h-44 bg-slate-900/90 border border-slate-700/80 p-2 rounded-xl flex flex-col items-center pointer-events-none">
+      <!-- Mini-map (Visible on desktop/tablet, hidden on mobile so it doesn't block touch buttons) -->
+      <div class="hidden md:flex absolute bottom-4 right-4 w-36 h-44 bg-slate-900/90 border border-slate-700/80 p-2 rounded-xl flex-col items-center pointer-events-none">
         <canvas id="minimap" width="128" height="128" class="rounded border border-slate-800 w-full"></canvas>
         <span class="text-[10px] text-slate-400 font-medium mt-1">🟨 ហាងអាវុធកណ្ដាល</span>
       </div>
@@ -186,12 +204,18 @@
             🌆
           </div>
           <h2 class="text-xl font-bold text-slate-100 mb-1">សូមស្វាគមន៍មកកាន់ទីក្រុងសេរី</h2>
-          <p class="text-xs text-slate-400 leading-relaxed mb-5">
+          <p class="text-xs text-slate-400 leading-relaxed mb-4">
             ផ្លូវថ្នល់ធំទូលាយ បើកបរស្រួល! ព្រះច័ន្ទស្ថិតនៅទិសថេរ និងពពកមានចលនាខ្យល់នៅខាងក្រោមព្រះច័ន្ទ។
           </p>
-          <button id="startButton" class="w-full py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-sm transition-colors shadow-lg shadow-amber-400/20">
-            ចាប់ផ្ដើមលេង ➔
-          </button>
+          <div class="flex flex-col sm:flex-row gap-2 mt-4">
+            <button id="startButton" type="button" class="flex-1 py-3 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-400/20 touch-manipulation">
+              ចាប់ផ្ដើមលេង ➔
+            </button>
+            <button id="startFullscreenBtn" type="button" class="py-3 px-4 bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl text-sm transition-all shadow-lg flex items-center justify-center gap-1.5 border border-emerald-500 touch-manipulation">
+              <span>⛶</span>
+              <span>លេងពេញអេក្រង់</span>
+            </button>
+          </div>
           <div class="mt-4 text-[11px] text-slate-500 flex justify-center gap-3">
             <span><kbd>WASD</kbd> ដើរ/បើកបរ</span>
             <span><kbd>Mouse</kbd> ផ្លាស់ប្តូរទិសដៅ</span>
@@ -327,6 +351,37 @@
         </div>
       </div>
 
+      <!-- ====== Mobile Touch Controls Overlay ====== -->
+      <div id="mobileControls" class="md:hidden absolute inset-0 pointer-events-none z-10 flex justify-between p-3 sm:p-4 items-end select-none">
+        <!-- D-Pad / Joystick Area (Left) -->
+        <div id="touchJoystick" class="w-28 h-28 sm:w-32 sm:h-32 bg-slate-900/60 border-2 border-slate-600/80 rounded-full relative pointer-events-auto flex items-center justify-center backdrop-blur-sm touch-manipulation">
+          <div id="joystickKnob" class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-400/80 rounded-full shadow-lg absolute pointer-events-none"></div>
+        </div>
+
+        <!-- Action Buttons Area (Right) -->
+        <div class="flex flex-col gap-2 sm:gap-3 items-end pointer-events-auto">
+          <!-- Quick Weapon Switch Buttons -->
+          <div class="flex gap-1.5 mb-1">
+            <button id="btnWp1" type="button" class="w-8 h-8 sm:w-9 sm:h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs touch-manipulation">1</button>
+            <button id="btnWp2" type="button" class="w-8 h-8 sm:w-9 sm:h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs touch-manipulation">2</button>
+            <button id="btnWp3" type="button" class="w-8 h-8 sm:w-9 sm:h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs touch-manipulation">3</button>
+            <button id="btnWp4" type="button" class="w-8 h-8 sm:w-9 sm:h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs touch-manipulation">4</button>
+          </div>
+
+          <div class="flex gap-2">
+            <!-- Enter/Exit Vehicle & Shop Button -->
+            <button id="btnActionE" type="button" class="w-11 h-11 sm:w-12 sm:h-12 bg-indigo-600/80 border border-indigo-400 rounded-full text-white font-black text-sm active:bg-indigo-500 shadow-lg flex items-center justify-center touch-manipulation">
+              E
+            </button>
+
+            <!-- Shoot Button -->
+            <button id="btnShoot" type="button" class="w-14 h-14 sm:w-16 sm:h-16 bg-red-600/80 border-2 border-red-400 rounded-full text-white font-black text-base active:bg-red-500 shadow-xl flex items-center justify-center touch-manipulation">
+              🔥
+            </button>
+          </div>
+        </div>
+      </div>
+
     </section><!-- end game viewport -->
 
     <!-- ====== Controls Footer ====== -->
@@ -343,36 +398,7 @@
     </footer>
 
   </main>
-  <!-- ====== Mobile Touch Controls Overlay ====== -->
-<div id="mobileControls" class="md:hidden absolute inset-0 pointer-events-none z-10 flex justify-between p-4 items-end select-none">
-  <!-- D-Pad / Joystick Area (Left) -->
-  <div id="touchJoystick" class="w-32 h-32 bg-slate-900/60 border-2 border-slate-600/80 rounded-full relative pointer-events-auto flex items-center justify-center backdrop-blur-sm">
-    <div id="joystickKnob" class="w-12 h-12 bg-amber-400/80 rounded-full shadow-lg absolute"></div>
-  </div>
-
-  <!-- Action Buttons Area (Right) -->
-  <div class="flex flex-col gap-3 items-end pointer-events-auto">
-    <!-- Quick Weapon Switch Buttons -->
-    <div class="flex gap-1.5 mb-1">
-      <button id="btnWp1" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">1</button>
-      <button id="btnWp2" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">2</button>
-      <button id="btnWp3" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">3</button>
-      <button id="btnWp4" class="w-9 h-9 bg-slate-800/80 border border-slate-600 rounded-lg text-amber-400 font-bold text-xs">4</button>
-    </div>
-
-    <div class="flex gap-2">
-      <!-- Enter/Exit Vehicle & Shop Button -->
-      <button id="btnActionE" class="w-12 h-12 bg-indigo-600/80 border border-indigo-400 rounded-full text-white font-black text-sm active:bg-indigo-500 shadow-lg flex items-center justify-center">
-        E
-      </button>
-
-      <!-- Shoot Button -->
-      <button id="btnShoot" class="w-16 h-16 bg-red-600/80 border-2 border-red-400 rounded-full text-white font-black text-base active:bg-red-500 shadow-xl flex items-center justify-center">
-        🔥
-      </button>
-    </div>
-  </div>
-</div>    
+  
   <!-- Game Logic -->
   <script src="game.js"></script>
 </body>
